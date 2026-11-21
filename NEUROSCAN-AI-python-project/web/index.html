@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroScan AI | سامانه پیشرفته هوش مصنوعی رادیولوژی و تشخیص تومور مغزی</title>
+    <!-- Google Fonts: Vazirmatn & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Vazirmatn:wght@300;400;500;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Top System Bar -->
+    <header class="top-nav">
+        <div class="brand">
+            <div class="logo-pulse">
+                <svg class="brain-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-4 4 4 4 0 0 0 4 4v1a4 4 0 0 0 4 4 4 4 0 0 0 4-4v-1a4 4 0 0 0 4-4 4 4 0 0 0-4-4V6a4 4 0 0 0-4-4z" />
+                    <path d="M12 2v20" />
+                    <circle cx="12" cy="12" r="3" class="target-circle" />
+                </svg>
+            </div>
+            <div class="brand-text">
+                <h1>NEUROSCAN <span>AI</span></h1>
+                <p>سامانه جامع پردازش تصویر (OpenCV) و تشخیص انکولوژی تومور مغز</p>
+            </div>
+        </div>
+
+        <div class="system-status">
+            <span class="status-dot"></span>
+            <span class="status-label">موتور بینایی ماشین و هوش مصنوعی:</span>
+            <span class="status-val">OpenCV 5.0 + PyTorch (Active)</span>
+        </div>
+
+        <div class="nav-actions">
+            <div class="samples-dropdown-wrapper">
+                <button id="btn-samples" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    پرونده‌های بالینی نمونه
+                </button>
+                <div id="samples-menu" class="samples-menu hidden">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <label for="file-upload" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                آپلود سی‌تی اسکن جدید
+            </label>
+            <input type="file" id="file-upload" accept="image/*" style="display: none;">
+
+            <button id="btn-print-report" class="btn btn-emerald">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                گزارش رسمی رادیولوژی
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="main-container">
+        <!-- Left: Radiology Image Viewer & Pipeline -->
+        <section class="viewport-section">
+            <!-- Viewport Controls Bar -->
+            <div class="viewport-toolbar">
+                <div class="layer-selector">
+                    <span class="toolbar-label">لایه نمایش:</span>
+                    <button class="layer-btn active" data-layer="overlay">تلفیقی تشخیصی</button>
+                    <button class="layer-btn" data-layer="gradcam">هیت‌مپ Grad-CAM</button>
+                    <button class="layer-btn" data-layer="contours">کانتورها و بستر تومور</button>
+                    <button class="layer-btn" data-layer="stripped">حذف جمجمه (Brain Mask)</button>
+                    <button class="layer-btn" data-layer="raw">اسکن خام (Raw CT)</button>
+                </div>
+
+                <div class="view-tools">
+                    <div class="slider-group">
+                        <label for="opacity-slider">شفافیت هیت‌مپ:</label>
+                        <input type="range" id="opacity-slider" min="0" max="100" value="85">
+                        <span id="opacity-val">85%</span>
+                    </div>
+
+                    <button id="btn-toggle-scan" class="tool-btn active"
+                        title="فعال/غیرفعال‌سازی اسکن لیزری متحرک رادیولوژی">
+                        <span class="scan-pulse-dot"></span>
+                        اسکن لیزری زنده
+                    </button>
+                    <button id="btn-toggle-scan" class="tool-btn active"
+                        title="فعال/غیرفعال‌سازی اسکن لیزری متحرک رادیولوژی">
+                        <span class="scan-pulse-dot"></span>
+                        اسکن لیزری زنده
+                    </button>
+                    <button id="btn-caliper" class="tool-btn" title="ابزار کولیس اندازه‌گیری قطر ضایعه">
+                        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none"
+                            stroke-width="2">
+                            <path d="M21 3L3 21M7 3l4 4M13 9l4 4M17 3l4 4M3 17l4 4" />
+                        </svg>
+                        خط‌کش اندازه‌گیری
+                    </button>
+                    <button id="btn-reset-view" class="tool-btn" title="بازنشانی اندازه و زاویه">
+                        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none"
+                            stroke-width="2">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <polyline points="3 3 3 8 8 8"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Central Canvas Area -->
+            <div class="canvas-wrapper" id="canvas-container">
+                <canvas id="radiology-canvas" width="512" height="512"></canvas>
+
+                <!-- Laser Scanning HUD Overlay (Holographic Medical Beam) -->
+                <div class="laser-scanner-overlay" id="laser-scanner">
+                    <div class="laser-beam"></div>
+                    <div class="scanner-grid"></div>
+                </div>
+
+                <!-- Laser Scanning HUD Overlay (Holographic Medical Beam) -->
+                <div class="laser-scanner-overlay" id="laser-scanner">
+                    <div class="laser-beam"></div>
+                    <div class="scanner-grid"></div>
+                </div>
+
+                <!-- HUD Telemetry Overlay -->
+                <div class="hud-overlay hud-top-left">
+                    <div>STUDY: <span id="hud-study">BRAIN CT AXIAL</span></div>
+                    <div>THICKNESS: <span id="hud-thick">1.25 mm</span></div>
+                    <div>FOV: <span>220.0 mm</span></div>
+                    <div>BEAM: <span id="hud-scanner-status" class="text-scanner-active">SCANNING [λ=532nm]</span></div>
+                </div>
+            </div>
+            </div>
+            <div class="hud-overlay hud-top-right">
+                <div>PATIENT: <span id="hud-patient">ANONYMOUS #9821</span></div>
+                <div>WINDOW: <span id="hud-window">BRAIN (W:80 L:40)</span></div>
+                <div>MATRIX: <span>512 x 512 px</span></div>
+            </div>
+            <div class="hud-overlay hud-bottom-left">
+                <div id="hud-measure-text" class="hidden">فاصله اندازه‌گیری: <span id="measure-mm">0.0 mm</span></div>
+                <div>MIDLINE STATUS: <span id="hud-midline">SYMMETRIC</span></div>
+            </div>
+            <div class="hud-overlay hud-bottom-right">
+                <div>AI CONFIDENCE: <span id="hud-confidence">CALIBRATED</span></div>
+                <div>ZOOM: <span id="hud-zoom">100%</span></div>
+            </div>
+
+            <!-- Measurement Drag Line (SVG Overlay) -->
+            <svg id="measurement-svg" class="measurement-svg"></svg>
+            </div>
+
+            <!-- OpenCV Pipeline Visual Breakdown -->
+            <div class="pipeline-drawer">
+                <div class="pipeline-header">
+                    <h3>
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none"
+                            stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                        مراحل گام‌به‌گام پایپ‌لاین بینایی ماشین (OpenCV Pipeline Breakdown)
+                    </h3>
+                    <span class="pipeline-badge">۸ مرحله پردازشی هوشمند</span>
+                </div>
+                <div class="pipeline-scroll" id="pipeline-cards">
+                    <!-- Dynamic Pipeline step cards -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Oncology Diagnostics & AI Risk Panel -->
+        <aside class="diagnostics-section">
+            <!-- Master Card 1: Oncology Diagnosis & Risk Gauge -->
+            <div class="card master-diagnosis-card">
+                <div class="card-header">
+                    <div class="header-title-group">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="#06B6D4" fill="none" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4M12 8h.01" />
+                        </svg>
+                        <h2>ارزیابی هوشمند انکولوژی و ریسک بدخیمی</h2>
+                    </div>
+                    <span id="risk-pill" class="badge badge-critical">نامشخص</span>
+                </div>
+
+                <!-- Diagnosis & WHO Grade Banner -->
+                <div class="diagnosis-banner">
+                    <div class="diag-header-row">
+                        <div class="diag-status-indicator"></div>
+                        <div class="diagnosis-badge" id="diagnosis-text">در حال تحلیل...</div>
+                    </div>
+                    <div class="diag-tags-row">
+                        <span class="who-grade-title" id="who-grade-text">WHO Grade: --</span>
+                    </div>
+                    <p class="subpathology-desc" id="subpathology-text">شرح پاتولوژیک ضایعه پس از ارزیابی استخراج خواهد
+                        شد.</p>
+                </div>
+
+                <!-- Gauge & Probabilities Split Row -->
+                <div class="gauge-split-layout">
+                    <!-- Gauge Dial -->
+                    <div class="gauge-wrapper">
+                        <svg class="circular-gauge" viewBox="0 0 200 120">
+                            <!-- Gradient Definition -->
+                            <defs>
+                                <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#10B981" />
+                                    <stop offset="50%" stop-color="#F59E0B" />
+                                    <stop offset="100%" stop-color="#EF4444" />
+                                </linearGradient>
+                            </defs>
+                            <path class="gauge-bg" d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke-width="14"
+                                stroke-linecap="round" />
+                            <path id="gauge-fill" class="gauge-fill" d="M 20 110 A 80 80 0 0 1 180 110" fill="none"
+                                stroke-width="14" stroke-linecap="round" stroke-dasharray="251.2"
+                                stroke-dashoffset="251.2" />
+                            <g id="gauge-needle" class="gauge-needle" transform="rotate(-90 100 110)">
+                                <line x1="100" y1="110" x2="100" y2="40" stroke="#06B6D4" stroke-width="3"
+                                    stroke-linecap="round" />
+                                <circle cx="100" cy="110" r="7" fill="#06B6D4" />
+                                <circle cx="100" cy="110" r="3" fill="#0F172A" />
+                            </g>
+                        </svg>
+                        <div class="gauge-readout">
+                            <span id="risk-percentage" class="risk-number">0.0%</span>
+                            <span class="risk-subtitle">احتمال بدخیمی و سرطان</span>
+                        </div>
+                    </div>
+
+                    <!-- Probability Bars Breakdown -->
+                    <div class="probability-bars">
+                        <div class="prob-row">
+                            <div class="prob-labels">
+                                <span>بدخیم / سرطانی (Malignant)</span>
+                                <span id="prob-val-malignant" class="text-danger">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="bar-malignant" class="progress-bar bar-danger" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <div class="prob-row">
+                            <div class="prob-labels">
+                                <span>خوش‌خیم (Benign)</span>
+                                <span id="prob-val-benign" class="text-warning">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="bar-benign" class="progress-bar bar-warning" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <div class="prob-row">
+                            <div class="prob-labels">
+                                <span>نرمال و بدون تومور (Normal)</span>
+                                <span id="prob-val-normal" class="text-success">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="bar-normal" class="progress-bar bar-success" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Quantitative OpenCV Radiomic Biomarkers -->
+            <div class="card metrics-card">
+                <div class="card-header">
+                    <div class="header-title-group">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="#06B6D4" fill="none" stroke-width="2">
+                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                        </svg>
+                        <h2>بیومارکرهای کمی استخراج‌شده (OpenCV Radiomics)</h2>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-top">
+                            <span class="metric-title">مساحت ضایعه (Area)</span>
+                            <span class="metric-icon">📐</span>
+                        </div>
+                        <span class="metric-val" id="metric-area">-- cm²</span>
+                        <span class="metric-sub" id="metric-area-mm">-- mm²</span>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric-top">
+                            <span class="metric-title">قطر معادل (Diameter)</span>
+                            <span class="metric-icon">📏</span>
+                        </div>
+                        <span class="metric-val" id="metric-diameter">-- mm</span>
+                        <span class="metric-sub">کالیبره رادیومیک اسکن</span>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric-top">
+                            <span class="metric-title">موقعیت آناتومیک</span>
+                            <span class="metric-icon">📍</span>
+                        </div>
+                        <span class="metric-val metric-small" id="metric-location">--</span>
+                        <span class="metric-sub" id="metric-hemi">--</span>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric-top">
+                            <span class="metric-title">شاخص عدم تقارن مغز</span>
+                            <span class="metric-icon">⚖️</span>
+                        </div>
+                        <span class="metric-val" id="metric-asymmetry">--</span>
+                        <span class="metric-sub" id="metric-midline">انحراف خط وسط</span>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric-top">
+                            <span class="metric-title">یکپارچگی مرز (Solidity)</span>
+                            <span class="metric-icon">🔍</span>
+                        </div>
+                        <span class="metric-val" id="metric-solidity">--</span>
+                        <span class="metric-sub">شاخص ارتشاح و تهاجم</span>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric-top">
+                            <span class="metric-title">مساحت بافت مغز</span>
+                            <span class="metric-icon">🧠</span>
+                        </div>
+                        <span class="metric-val" id="metric-brain-area">-- cm²</span>
+                        <span class="metric-sub">حجم جمجمه خالص</span>
+                    </div>
+                </div>
+
+                <!-- Malignancy Factor Breakdown -->
+                <div class="factors-section">
+                    <h4>شواهد مورفولوژیک موثر بر احتمال سرطان:</h4>
+                    <ul class="factors-list" id="factors-list">
+                        <!-- Populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 3: Clinical Protocol & Guidance -->
+            <div class="card action-card">
+                <div class="card-header">
+                    <div class="header-title-group">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="#F59E0B" fill="none" stroke-width="2">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                        <h2>پروتکل بالینی و اقدامات بعدی (Clinical Action)</h2>
+                    </div>
+                </div>
+                <div class="action-body" id="recommendation-text">
+                    در حال بارگذاری راهنمای بالینی...
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Official Radiology Print / PDF Report Modal -->
+    <div id="report-modal" class="modal-backdrop hidden">
+        <div class="modal-content print-document">
+            <div class="modal-actions-bar no-print">
+                <button id="btn-do-print" class="btn btn-emerald">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    چاپ / ذخیره PDF گزارش
+                </button>
+                <button id="btn-close-modal" class="btn btn-secondary">بستن</button>
+            </div>
+
+            <div class="report-paper">
+                <div class="report-header">
+                    <div class="report-logo">
+                        <h2>NEUROSCAN AI DIAGNOSTIC REPORT</h2>
+                        <p>مرکز رادیولوژی هوشمند و انکولوژی عصبی دیجیتال</p>
+                    </div>
+                    <div class="report-meta">
+                        <div><strong>شماره پرونده:</strong> <span id="rep-id">NS-2026-9481</span></div>
+                        <div><strong>تاریخ معاینه:</strong> <span id="rep-date">۱۴۰۵/۰۹/۰۱ - 11:28</span></div>
+                        <div><strong>دستگاه تصویربرداری:</strong> 64-Slice High-Resolution Brain CT</div>
+                    </div>
+                </div>
+
+                <hr class="report-divider">
+
+                <div class="report-patient-grid">
+                    <div><strong>نام بیمار:</strong> مجهول‌الهویه (مورد رادیولوژی آموزشی)</div>
+                    <div><strong>سن / جنسیت:</strong> ۵۲ سال / آقا</div>
+                    <div><strong>نوع تصویربرداری:</strong> Brain CT without Contrast (Axial)</div>
+                    <div><strong>پروتکل بازسازی:</strong> Soft Tissue & Bone Kernels</div>
+                </div>
+
+                <div class="report-section-title">۱. خلاصه یافته‌های تشخیصی هوش مصنوعی (AI Diagnostic Summary)</div>
+                <table class="report-table">
+                    <tr>
+                        <th>تشخیص نهایی:</th>
+                        <td id="rep-diagnosis">--</td>
+                        <th>احتمال بدخیمی / سرطان:</th>
+                        <td id="rep-cancer-prob" style="font-weight: 800; color: #dc2626;">--</td>
+                    </tr>
+                    <tr>
+                        <th>درجه‌بندی WHO:</th>
+                        <td id="rep-who">--</td>
+                        <th>سطح خطر بالینی:</th>
+                        <td id="rep-risk">--</td>
+                    </tr>
+                </table>
+
+                <div class="report-section-title">۲. مستندات تصویربرداری و نقشه‌های رادیومیک (Imaging Evidence)</div>
+                <div class="report-images-row">
+                    <div class="rep-img-box">
+                        <img id="rep-img-raw" alt="Raw Scan">
+                        <span>سی‌تی اسکن اصلی</span>
+                    </div>
+                    <div class="rep-img-box">
+                        <img id="rep-img-contours" alt="Contours">
+                        <span>مرزبندی تومور (OpenCV)</span>
+                    </div>
+                    <div class="rep-img-box">
+                        <img id="rep-img-gradcam" alt="Grad-CAM">
+                        <span>نقشه حرارتی بدخیمی (Grad-CAM)</span>
+                    </div>
+                </div>
+
+                <div class="report-section-title">۳. سنجش‌های کمی ضایعه (Quantitative Biomarkers)</div>
+                <div class="report-bullets" id="rep-biomarkers">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <div class="report-section-title">۴. دستورالعمل و اقدامات بالینی پیشنهادی (Clinical Recommendations)
+                </div>
+                <div class="report-recommendation-box" id="rep-recommendation">
+                    --
+                </div>
+
+                <div class="report-footer">
+                    <div class="signature-box">
+                        <div class="signature-line">امضای دیجیتال و تایید واحد رادیولوژی عصبی</div>
+                        <div class="signature-sub">NeuroScan Automated Validation Engine v2.4</div>
+                    </div>
+                    <div class="disclaimer-text">
+                        * این گزارش توسط سامانه ترکیبی بینایی ماشین OpenCV 5.0 و یادگیری عمیق استخراج شده و به عنوان
+                        ابزار کمک-تشخیصی (CAD) برای متخصصین رادیولوژی و جراحی اعصاب طراحی شده است.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+
+</html>

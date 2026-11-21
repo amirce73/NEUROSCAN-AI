@@ -1,0 +1,30 @@
+{
+  "name": "neuroscan-ai",
+  "version": "2.0.0",
+  "description": "NeuroScan AI - Intelligent Brain CT/MRI Tumor Detection, Malignancy Risk Scoring & Radiology CAD Workstation",
+  "main": "dist/main.js",
+  "types": "dist/types/neuroscan.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "type-check": "tsc --noEmit",
+    "start": "python server.py 8080"
+  },
+  "keywords": [
+    "brain-tumor-detection",
+    "opencv",
+    "pytorch",
+    "radiology",
+    "cad",
+    "cancer-probability",
+    "grad-cam",
+    "typescript",
+    "medical-imaging"
+  ],
+  "author": "NeuroScan AI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
